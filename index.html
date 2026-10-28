@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rust Raid Calculator</title>
+<style>
+:root{--bg:#0e0e0f;--panel:#19191b;--panel2:#222225;--line:#2f2f33;--text:#e6e3dc;--muted:#8d8b85;--acc:#e8641b;--acc2:#ff8a3d;--ok:#6fbf5a;--bad:#d9534f}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:radial-gradient(circle at 20% -10%,#2a1a10 0,#0e0e0f 45%) fixed;color:var(--text);font:15px/1.5 "Segoe UI",system-ui,sans-serif}
+main{max-width:1100px;margin:auto;padding:0 16px 40px}
+section{margin-top:44px;scroll-margin-top:70px}
+h1{font-size:clamp(26px,5vw,44px);margin:0 0 12px;line-height:1.15}
+h2{margin:0 0 16px;font-size:22px;text-transform:uppercase;letter-spacing:.06em;border-left:4px solid var(--acc);padding-left:12px}
+.topbar{position:sticky;top:0;z-index:20;display:flex;gap:16px;justify-content:space-between;align-items:center;flex-wrap:wrap;padding:10px 20px;background:rgba(14,14,15,.92);backdrop-filter:blur(8px);border-bottom:2px solid var(--acc)}
+.logo{color:var(--text);text-decoration:none;font-weight:700;letter-spacing:.08em}
+.logo b{color:var(--acc)}.logo-mark{color:var(--acc)}
+nav a{color:var(--muted);text-decoration:none;margin-left:14px;transition:color .2s}
+nav a:hover{color:var(--acc2)}
+.hero{padding:48px 0 8px}
+.hero p{max-width:640px;color:var(--muted);font-size:17px}
+.hero-stats{display:flex;gap:16px;flex-wrap:wrap;margin-top:24px}
+.hero-stats div{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--acc);padding:12px 20px;min-width:180px}
+.hero-stats span{display:block;font-size:30px;font-weight:700;color:var(--acc2)}
+small{color:var(--muted)}
+.toolbar{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+input,select{background:var(--panel2);color:var(--text);border:1px solid var(--line);padding:9px 12px;font:inherit;border-radius:4px}
+input:focus,select:focus{outline:2px solid var(--acc);border-color:transparent}
+#search{flex:1;min-width:200px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{background:var(--panel2);color:var(--text);border:1px solid var(--line);padding:8px 14px;border-radius:20px;cursor:pointer;font:inherit;transition:.2s}
+.chip:hover{border-color:var(--acc)}
+.chip.on{background:var(--acc);border-color:var(--acc);color:#111;font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.grid.small{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+.card{background:var(--panel);border:1px solid var(--line);padding:14px;border-radius:6px;cursor:pointer;text-align:left;color:inherit;font:inherit;transition:transform .2s,border-color .2s,box-shadow .2s;position:relative}
+.card:hover{transform:translateY(-3px);border-color:var(--acc);box-shadow:0 8px 20px rgba(232,100,27,.15)}
+.card .ico{font-size:30px}
+.card h3{margin:6px 0 2px;font-size:16px}
+.card .badge{position:absolute;top:8px;right:10px;background:var(--acc);color:#111;font-weight:700;border-radius:10px;padding:0 8px;font-size:13px}
+.res{background:var(--panel);border:1px solid var(--line);padding:12px;border-radius:6px}
+.res b{display:block;font-size:22px;color:var(--acc2)}
+.row-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.row-head h2{margin:0}
+.btn{background:var(--acc);color:#111;border:0;padding:10px 18px;font:inherit;font-weight:700;border-radius:4px;cursor:pointer;transition:.2s}
+.btn:hover{background:var(--acc2)}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+.btn.ghost:hover{border-color:var(--bad);color:var(--bad)}
+.method-pick{margin:14px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);padding:10px 14px;border-radius:6px;flex-wrap:wrap}
+.item .name{flex:1;min-width:160px}
+.item .name small{display:block}
+.qty{display:flex;align-items:center;gap:4px}
+.qty button{width:32px;height:32px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:4px;cursor:pointer;font-size:18px}
+.qty button:hover{border-color:var(--acc)}
+.qty input{width:64px;text-align:center}
+.del{background:none;border:0;color:var(--muted);font-size:20px;cursor:pointer}
+.del:hover{color:var(--bad)}
+.empty{color:var(--muted);padding:20px;border:1px dashed var(--line);text-align:center;border-radius:6px}
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:6px}
+table{width:100%;border-collapse:collapse;background:var(--panel)}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--muted);font-weight:600;text-transform:uppercase;font-size:12px;letter-spacing:.06em}
+tr.best td{background:rgba(111,191,90,.12);color:var(--ok);font-weight:600}
+tr:hover td{background:var(--panel2)}
+.hint{color:var(--muted);font-size:13px}
+.sulfur-card{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--acc);padding:16px;border-radius:6px}
+.sulfur-card strong{display:block;font-size:40px;color:var(--acc2)}
+.bar{height:10px;background:var(--panel2);border-radius:5px;overflow:hidden;margin:10px 0 6px}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--acc),#ffcc33);transition:width .5s}
+.chips-out{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.warn{color:#ffb74d;background:rgba(255,183,77,.1);padding:10px 14px;border-radius:6px}
+footer{text-align:center;color:var(--muted);padding:24px 16px;border-top:1px solid var(--line);font-size:13px}
+code{color:var(--acc2)}
+.toast{position:fixed;bottom:20px;left:50%;transform:translate(-50%,80px);background:var(--acc);color:#111;padding:10px 20px;border-radius:6px;font-weight:700;transition:transform .3s;z-index:50}
+.toast.show{transform:translate(-50%,0)}
+@media(max-width:600px){nav a{margin:0 10px 0 0}.item{padding:10px}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="logo" href="#home"><span class="logo-mark">☢</span> RUST <b>RAID</b> CALCULATOR</a>
+  <nav>
+    <a href="#catalog">Каталог</a><a href="#selected">Рейд</a><a href="#compare">Порівняння</a><a href="#summary">Підсумок</a><a href="#shopping">Крафт</a>
+  </nav>
+</header>
+
+<main>
+<section id="home" class="hero">
+  <h1>Порахуй рейд до того, як витратиш сірку</h1>
+  <p>Обери двері, стіни та інші конструкції, вкажи кількість — калькулятор покаже, скільки C4, ракет, сачелів чи вибухових патронів потрібно, і весь список ресурсів для крафту.</p>
+  <div class="hero-stats">
+    <div><span id="heroSulfur">0</span><small>сірки в поточному рейді</small></div>
+    <div><span id="heroCount">0</span><small>об'єктів у списку</small></div>
+  </div>
+</section>
+
+<section id="catalog">
+  <h2>Каталог конструкцій</h2>
+  <div class="toolbar">
+    <input id="search" type="search" placeholder="Пошук за назвою…" aria-label="Пошук">
+    <div id="filters" class="chips"></div>
+  </div>
+  <div id="catalogGrid" class="grid"></div>
+</section>
+
+<section id="selected">
+  <div class="row-head">
+    <h2>Вибрані об'єкти</h2>
+    <button id="resetBtn" class="btn ghost">Скинути</button>
+  </div>
+  <div class="method-pick">
+    <label for="methodSel">Спосіб рейду:</label>
+    <select id="methodSel"></select>
+  </div>
+  <div id="selectedList" class="list"></div>
+</section>
+
+<section id="compare">
+  <h2>Порівняння способів рейду</h2>
+  <div class="table-wrap"><table id="compareTable"></table></div>
+  <p class="hint">«—» означає, що для цього способу немає перевірених значень для частини об'єктів. Найдешевший повністю придатний спосіб підсвічено.</p>
+</section>
+
+<section id="summary">
+  <div class="row-head">
+    <h2>Загальний підсумок</h2>
+    <button id="copyBtn" class="btn">Копіювати результат</button>
+  </div>
+  <div class="sulfur-card">
+    <div><small>Вартість рейду в сірці</small><strong id="sulfurTotal">0</strong></div>
+    <div class="bar"><i id="sulfurBar"></i></div>
+    <small id="sulfurNote"></small>
+  </div>
+  <div id="explosivesTotal" class="chips-out"></div>
+  <p id="warn" class="warn" hidden></p>
+</section>
+
+<section id="shopping">
+  <h2>Список ресурсів для крафту</h2>
+  <div id="shoppingList" class="grid small"></div>
+</section>
+</main>
+
+<footer>Rust Raid Calculator · версія <span id="ver"></span> · Дані в <code>script</code> (масиви <code>TARGETS</code>, <code>RECIPES</code>) — оновлюйте після патчів Rust. Не афілійовано з Facepunch.</footer>
+<div id="toast" class="toast"></div>
+
+<script>
+'use strict';
+const VERSION = '1.0.0';
+const STORAGE_KEY = 'rustRaidCalc.v1';
+const MAX_QTY = 999;
+
+/* ===== ДАНІ (оновлюйте тут) ===== */
+// Назви сирих ресурсів
+const RESOURCES = {
+  sulfur: ['Сірка', '🟡'], charcoal: ['Деревне вугілля', '⚫'], metal: ['Металеві фрагменти', '🔩'],
+  lgf: ['Low Grade Fuel', '⛽'], cloth: ['Тканина', '🧵'], techtrash: ['Tech Trash', '💾'],
+  pipe: ['Metal Pipe', '🔧'], rope: ['Мотузка', '🪢'], stash: ['Small Stash', '📦']
+};
+// Рецепти на 1 одиницю. Ключ, що є в RECIPES, розкривається рекурсивно, інакше це сирий ресурс.
+// verify:true — значення варто звірити з поточним патчем.
+const RECIPES = {
+  gunpowder: { charcoal: 3, sulfur: 2 },                                  // 30 вугілля + 20 сірки = 10 пороху
+  explosives: { gunpowder: 50, sulfur: 10, metal: 10, lgf: 3 },
+  beancan:    { gunpowder: 60, metal: 20, lgf: 20 },
+  satchel:    { beancan: 4, stash: 1, rope: 1 },
+  c4:         { explosives: 20, cloth: 5, techtrash: 2 },
+  rocket:     { gunpowder: 150, explosives: 10, pipe: 2, metal: 100, lgf: 30 },
+  ammo:       { sulfur: 25, charcoal: 50, metal: 5, verify: true }
+};
+const METHODS = [
+  { id: 'c4', name: 'C4 (Timed Explosive Charge)', icon: '💣' },
+  { id: 'rocket', name: 'Ракета', icon: '🚀' },
+  { id: 'satchel', name: 'Satchel Charge', icon: '🎒' },
+  { id: 'ammo', name: 'Explosive 5.56 Rifle Ammo', icon: '🔫' },
+  { id: 'beancan', name: 'Beancan Grenade', icon: '🥫' }
+];
+// counts — скільки одиниць потрібно (зі «сильної» сторони); null — немає даних.
+const T = (id, name, cat, icon, hp, c4, rocket, satchel, ammo, beancan = null) =>
+  ({ id, name, cat, icon, hp, counts: { c4, rocket, satchel, ammo, beancan } });
+const TARGETS = [
+  T('wood_door', 'Дерев\'яні двері', 'doors', '🚪', 200, 1, 1, 2, 18, 2),
+  T('sheet_door', 'Металеві двері', 'doors', '🚪', 250, 1, 2, 4, 63),
+  T('garage_door', 'Гаражні двері', 'doors', '🏭', 600, 2, 3, 9, 150),
+  T('armored_door', 'Броньовані двері', 'doors', '🛡️', 1000, 3, 5, 15, 250),
+  T('wood_wall', 'Дерев\'яна стіна', 'walls', '🪵', 250, 1, 2, 3, 48),
+  T('stone_wall', 'Кам\'яна стіна', 'walls', '🧱', 500, 2, 4, 10, 182),
+  T('metal_wall', 'Металева стіна', 'walls', '⬛', 1000, 4, 8, 23, 399),
+  T('armored_wall', 'Броньована стіна', 'walls', '🏰', 2000, 8, 15, 46, 798),
+  T('hatch', 'Люк (Ladder Hatch)', 'other', '🪜', 250, 1, 2, 4, 63),
+  T('glass', 'Зміцнене скло (вікно)', 'other', '🪟', 350, 2, 3, 9, 140),
+  T('hi_wood', 'Висока зовн. дерев\'яна стіна', 'other', '🌲', 500, 2, 3, 6, 96),
+  T('hi_stone', 'Висока зовн. кам\'яна стіна', 'other', '⛰️', 500, 2, 4, 10, 182),
+  T('tc', 'Tool Cupboard', 'other', '🗄️', 100, 1, 1, 1, 9, 1)
+];
+const CATEGORIES = [['all', 'Усе'], ['doors', 'Двері'], ['walls', 'Стіни'], ['other', 'Інше']];
+
+/* ===== ЛОГІКА ===== */
+const fmt = n => Math.round(n).toLocaleString('uk-UA');
+const clampQty = v => { v = Math.floor(Number(v)); return Number.isFinite(v) ? Math.min(MAX_QTY, Math.max(0, v)) : 0; };
+
+function expand(key, qty = 1, out = {}) {
+  for (const [k, v] of Object.entries(RECIPES[key])) {
+    if (k === 'verify') continue;
+    if (RECIPES[k]) expand(k, qty * v, out); else out[k] = (out[k] || 0) + qty * v;
+  }
+  return out;
+}
+const RAW = Object.fromEntries(METHODS.map(m => [m.id, expand(m.id)]));
+const SULFUR = Object.fromEntries(METHODS.map(m => [m.id, RAW[m.id].sulfur || 0]));
+const targetById = id => TARGETS.find(t => t.id === id);
+
+const state = { items: {}, method: 'auto', filter: 'all', search: '' };
+
+// Для кожного об'єкта визначає спосіб: вибраний або найдешевший за сіркою
+function pickMethod(t) {
+  if (state.method !== 'auto') return t.counts[state.method] != null ? state.method : null;
+  let best = null, bestCost = Infinity;
+  for (const m of METHODS) {
+    const c = t.counts[m.id];
+    if (c != null && c * SULFUR[m.id] < bestCost) { best = m.id; bestCost = c * SULFUR[m.id]; }
+  }
+  return best;
+}
+
+function calculate() {
+  const units = {}, raw = {}, skipped = [];
+  let sulfur = 0;
+  for (const [id, qty] of Object.entries(state.items)) {
+    const t = targetById(id), m = t && pickMethod(t);
+    if (!t) continue;
+    if (!m) { skipped.push(t.name); continue; }
+    const n = t.counts[m] * qty;
+    units[m] = (units[m] || 0) + n;
+  }
+  for (const [m, n] of Object.entries(units)) {
+    sulfur += n * SULFUR[m];
+    for (const [r, v] of Object.entries(RAW[m])) raw[r] = (raw[r] || 0) + v * n;
+  }
+  return { units, raw, sulfur, skipped };
+}
+
+function compareMethods() {
+  const ids = Object.keys(state.items).filter(id => state.items[id] > 0);
+  const rows = METHODS.map(m => {
+    let count = 0, covered = 0;
+    ids.forEach(id => { const c = targetById(id).counts[m.id]; if (c != null) { count += c * state.items[id]; covered++; } });
+    return { m, count, covered, total: ids.length, sulfur: count * SULFUR[m.id], full: ids.length > 0 && covered === ids.length };
+  });
+  const full = rows.filter(r => r.full);
+  const best = full.length ? full.reduce((a, b) => a.sulfur <= b.sulfur ? a : b) : null;
+  // «Мікс»: найдешевший спосіб для кожного об'єкта окремо
+  let mix = 0;
+  ids.forEach(id => {
+    const t = targetById(id);
+    mix += state.items[id] * Math.min(...METHODS.filter(m => t.counts[m.id] != null).map(m => t.counts[m.id] * SULFUR[m.id]));
+  });
+  return { rows, best, mix, n: ids.length };
+}
+
+/* ===== РЕНДЕР ===== */
+const $ = id => document.getElementById(id);
+
+function tooltip(t) {
+  return `${t.name}\nМіцність: ${fmt(t.hp)} HP\n` + METHODS.filter(m => t.counts[m.id] != null)
+    .map(m => `${m.name}: ${t.counts[m.id]} шт.`).join('\n');
+}
+
+function renderFilters() {
+  $('filters').innerHTML = CATEGORIES.map(([id, label]) =>
+    `<button class="chip${state.filter === id ? ' on' : ''}" data-filter="${id}">${label}</button>`).join('');
+}
+
+function renderCatalog() {
+  const q = state.search.trim().toLowerCase();
+  const list = TARGETS.filter(t => (state.filter === 'all' || t.cat === state.filter) && t.name.toLowerCase().includes(q));
+  $('catalogGrid').innerHTML = list.length ? list.map(t => {
+    const q2 = state.items[t.id];
+    return `<button class="card" data-add="${t.id}" title="${tooltip(t)}">
+      ${q2 ? `<span class="badge">×${q2}</span>` : ''}<div class="ico">${t.icon}</div>
+      <h3>${t.name}</h3><small>${fmt(t.hp)} HP</small></button>`;
+  }).join('') : '<div class="empty">Нічого не знайдено</div>';
+}
+
+function renderSelected() {
+  const ids = Object.keys(state.items);
+  $('selectedList').innerHTML = ids.length ? ids.map(id => {
+    const t = targetById(id), m = pickMethod(t), mm = METHODS.find(x => x.id === m);
+    const info = m ? `${mm.icon} ${mm.name}: ${fmt(t.counts[m] * state.items[id])} шт.` : '⚠ немає даних для цього способу';
+    return `<div class="item"><span class="ico">${t.icon}</span>
+      <div class="name"><b>${t.name}</b><small>${info}</small></div>
+      <div class="qty"><button data-dec="${id}" aria-label="Менше">−</button>
+      <input type="number" min="1" max="${MAX_QTY}" value="${state.items[id]}" data-qty="${id}" aria-label="Кількість">
+      <button data-inc="${id}" aria-label="Більше">+</button></div>
+      <button class="del" data-del="${id}" title="Видалити" aria-label="Видалити">✕</button></div>`;
+  }).join('') : '<div class="empty">Список порожній — оберіть конструкції в каталозі вище</div>';
+}
+
+function renderCompare() {
+  const c = compareMethods();
+  if (!c.n) { $('compareTable').innerHTML = '<tr><td>Додайте об\'єкти, щоб побачити порівняння</td></tr>'; return; }
+  const row = r => `<tr class="${c.best && c.best.m.id === r.m.id ? 'best' : ''}"><td>${r.m.icon} ${r.m.name}</td>
+    <td>${r.full ? fmt(r.count) : '—'}</td><td>${r.full ? fmt(r.sulfur) : '—'}</td><td>${r.covered}/${r.total}</td></tr>`;
+  $('compareTable').innerHTML = `<thead><tr><th>Спосіб</th><th>Кількість</th><th>Сірка</th><th>Охоплення</th></tr></thead><tbody>
+    ${c.rows.map(row).join('')}
+    <tr><td>🧮 Мікс (найдешевший для кожного об'єкта)</td><td>—</td><td>${fmt(c.mix)}</td><td>${c.n}/${c.n}</td></tr></tbody>`;
+}
+
+function renderSummary() {
+  const r = calculate();
+  $('heroSulfur').textContent = fmt(r.sulfur);
+  $('heroCount').textContent = fmt(Object.values(state.items).reduce((a, b) => a + b, 0));
+  $('sulfurTotal').textContent = fmt(r.sulfur) + ' сірки';
+  $('sulfurBar').style.width = Math.min(100, r.sulfur / 20000 * 100) + '%';
+  $('sulfurNote').textContent = 'Шкала: 100% = 20 000 сірки';
+  $('explosivesTotal').innerHTML = Object.entries(r.units).map(([m, n]) => {
+    const mm = METHODS.find(x => x.id === m);
+    return `<div class="res"><small>${mm.icon} ${mm.name}</small><b>${fmt(n)}</b></div>`;
+  }).join('');
+  $('warn').hidden = !r.skipped.length;
+  $('warn').textContent = r.skipped.length ? 'Не розраховано для вибраного способу: ' + r.skipped.join(', ') : '';
+  $('shoppingList').innerHTML = Object.entries(r.raw).sort((a, b) => b[1] - a[1]).map(([k, v]) =>
+    `<div class="res"><small>${RESOURCES[k][1]} ${RESOURCES[k][0]}</small><b>${fmt(v)}</b></div>`).join('')
+    || '<div class="empty">Немає ресурсів</div>';
+  return r;
+}
+
+function render() {
+  renderFilters(); renderCatalog(); renderSelected(); renderCompare(); renderSummary();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ items: state.items, method: state.method }));
+}
+
+/* ===== ДІЇ ===== */
+function setQty(id, v) {
+  const q = clampQty(v);
+  if (q < 1) delete state.items[id]; else state.items[id] = q;
+  render();
+}
+function resultText() {
+  const r = calculate();
+  const lines = ['Rust Raid Calculator', ''];
+  Object.entries(state.items).forEach(([id, q]) => lines.push(`${targetById(id).name} ×${q}`));
+  lines.push('', 'Вибухівка:');
+  Object.entries(r.units).forEach(([m, n]) => lines.push(`- ${METHODS.find(x => x.id === m).name}: ${fmt(n)}`));
+  lines.push(`Вартість у сірці: ${fmt(r.sulfur)}`, '', 'Ресурси для крафту:');
+  Object.entries(r.raw).forEach(([k, v]) => lines.push(`- ${RESOURCES[k][0]}: ${fmt(v)}`));
+  return lines.join('\n');
+}
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+async function copyResult() {
+  if (!Object.keys(state.items).length) return toast('Список порожній');
+  const text = resultText();
+  try { await navigator.clipboard.writeText(text); }
+  catch { const a = document.createElement('textarea'); a.value = text; document.body.appendChild(a); a.select(); document.execCommand('copy'); a.remove(); }
+  toast('Скопійовано!');
+}
+
+function init() {
+  $('ver').textContent = VERSION;
+  $('methodSel').innerHTML = '<option value="auto">Найдешевший для кожного об\'єкта</option>' +
+    METHODS.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+  try {
+    const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    Object.entries(s.items || {}).forEach(([id, q]) => { if (targetById(id) && clampQty(q) > 0) state.items[id] = clampQty(q); });
+    if (s.method === 'auto' || METHODS.some(m => m.id === s.method)) state.method = s.method;
+  } catch { /* пошкоджені дані — ігноруємо */ }
+  $('methodSel').value = state.method;
+
+  document.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const d = b.dataset;
+    if (d.filter) { state.filter = d.filter; render(); }
+    else if (d.add) setQty(d.add, (state.items[d.add] || 0) + 1);
+    else if (d.inc) setQty(d.inc, state.items[d.inc] + 1);
+    else if (d.dec) setQty(d.dec, state.items[d.dec] - 1);
+    else if (d.del) setQty(d.del, 0);
+  });
+  document.addEventListener('change', e => { if (e.target.dataset.qty) setQty(e.target.dataset.qty, e.target.value); });
+  $('search').addEventListener('input', e => { state.search = e.target.value; renderCatalog(); });
+  $('methodSel').addEventListener('change', e => { state.method = e.target.value; render(); });
+  $('resetBtn').addEventListener('click', () => { state.items = {}; state.method = 'auto'; state.filter = 'all'; state.search = ''; $('search').value = ''; $('methodSel').value = 'auto'; render(); });
+  $('copyBtn').addEventListener('click', copyResult);
+  render();
+}
+
+init();
+</script>
+</body>
+</html>
